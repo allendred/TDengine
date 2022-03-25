@@ -216,7 +216,7 @@ class CTaosInterface(object):
         connection = ctypes.c_void_p(CTaosInterface.libtaos.taos_connect(
             _host, _user, _password, _db, _port))
 
-        if connection.value == None:
+        if connection.value is None:
             print('connect to TDengine failed')
             # sys.exit(1)
         else:
@@ -257,12 +257,15 @@ class CTaosInterface(object):
         '''Use result after calling self.query
         '''
         result = ctypes.c_void_p(CTaosInterface.libtaos.taos_use_result(connection))
-        fields = []
         pfields = CTaosInterface.fetchFields(result)
-        for i in range(CTaosInterface.fieldsCount(connection)):
-            fields.append({'name': pfields[i].name.decode('utf-8'),
-                           'bytes': pfields[i].bytes,
-                           'type': ord(pfields[i].type)})
+        fields = [
+            {
+                'name': pfields[i].name.decode('utf-8'),
+                'bytes': pfields[i].bytes,
+                'type': ord(pfields[i].type),
+            }
+            for i in range(CTaosInterface.fieldsCount(connection))
+        ]
 
         return result, fields
 
@@ -358,8 +361,8 @@ if __name__ == '__main__':
     cinter = CTaosInterface()
     conn = cinter.connect()
 
-    print('Query return value: {}'.format(cinter.query(conn, 'show databases')))
-    print('Affected rows: {}'.format(cinter.affectedRows(conn)))
+    print(f"Query return value: {cinter.query(conn, 'show databases')}")
+    print(f'Affected rows: {cinter.affectedRows(conn)}')
 
     result, des = CTaosInterface.useResult(conn)
 

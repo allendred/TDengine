@@ -94,23 +94,18 @@ class TDengineCursor(object):
         if not self._connection:
             # TODO : change the exception raised here
             raise ProgrammingError("Cursor is not connected")
-        
+
         self._connection.clear_result_set()
         self._reset_result()
 
         stmt = operation
-        if params is not None:
-            pass
-        
         res = CTaosInterface.query(self._connection._conn, stmt)
-        if res == 0:
-            if CTaosInterface.fieldsCount(self._connection._conn) == 0:
-                return CTaosInterface.affectedRows(self._connection._conn)
-            else:
-                self._result, self._fields = CTaosInterface.useResult(self._connection._conn)
-                return self._handle_result()
-        else:
+        if res != 0:
             raise ProgrammingError(CTaosInterface.errStr(self._connection._conn))
+        if CTaosInterface.fieldsCount(self._connection._conn) == 0:
+            return CTaosInterface.affectedRows(self._connection._conn)
+        self._result, self._fields = CTaosInterface.useResult(self._connection._conn)
+        return self._handle_result()
 
     def executemany(self, operation, seq_of_parameters):
         """Prepare a database operation (query or command) and then execute it against all parameter sequences or mappings found in the sequence seq_of_parameters.
@@ -130,8 +125,8 @@ class TDengineCursor(object):
         """
         if self._result is None or self._fields is None:
             raise OperationalError("Invalid use of fetchall")
-        
-        buffer = [[] for i in range(len(self._fields))]
+
+        buffer = [[] for _ in range(len(self._fields))]
         self._rowcount = 0
         while True:
             block, num_of_fields = CTaosInterface.fetchBlock(self._result, self._fields)
@@ -141,7 +136,7 @@ class TDengineCursor(object):
                 buffer[i].extend(block[i])
 
         self._connection.clear_result_set()
-        
+
         return list(map(tuple, zip(*buffer)))
 
 
@@ -171,8 +166,9 @@ class TDengineCursor(object):
     def _handle_result(self):
         """Handle the return result from query.
         """
-        self._description = []
-        for ele in self._fields:
-            self._description.append((ele['name'], ele['type'], None, None, None, None, False))
-        
+        self._description = [
+            (ele['name'], ele['type'], None, None, None, None, False)
+            for ele in self._fields
+        ]
+
         return self._result
