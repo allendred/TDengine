@@ -70,8 +70,7 @@ class TDengineConnection(object):
     def clear_result_set(self):
         """Clear unused result set on this connection.
         """
-        result = self._chandle.useResult(self._conn)[0]
-        if result:
+        if result := self._chandle.useResult(self._conn)[0]:
             self._chandle.freeResult(result)
 
 if __name__ == "__main__":

@@ -82,9 +82,24 @@ def _crow_binary_to_python(data, num_of_rows, nbytes=None, micro=False):
     """Function to convert C binary row to python row
     """
     if num_of_rows > 0:
-        return [ None if ele.value[0:1] == FieldType.C_BINARY_NULL else ele.value.decode('utf-8') for ele in (ctypes.cast(data,  ctypes.POINTER(ctypes.c_char * nbytes)))[:abs(num_of_rows)][::-1]]
+        return [
+            None
+            if ele.value[:1] == FieldType.C_BINARY_NULL
+            else ele.value.decode('utf-8')
+            for ele in (
+                ctypes.cast(data, ctypes.POINTER(ctypes.c_char * nbytes))
+            )[: abs(num_of_rows)][::-1]
+        ]
+
     else:
-        return [ None if ele.value[0:1] == FieldType.C_BINARY_NULL else ele.value.decode('utf-8') for ele in (ctypes.cast(data,  ctypes.POINTER(ctypes.c_char * nbytes)))[:abs(num_of_rows)]]
+        return [
+            None
+            if ele.value[:1] == FieldType.C_BINARY_NULL
+            else ele.value.decode('utf-8')
+            for ele in (
+                ctypes.cast(data, ctypes.POINTER(ctypes.c_char * nbytes))
+            )[: abs(num_of_rows)]
+        ]
 
 def _crow_nchar_to_python(data, num_of_rows, nbytes=None, micro=False):
     """Function to convert C nchar row to python row
@@ -216,7 +231,7 @@ class CTaosInterface(object):
         connection = ctypes.c_void_p(CTaosInterface.libtaos.taos_connect(
             _host, _user, _password, _db, _port))
 
-        if connection.value == None:
+        if connection.value is None:
             print('connect to TDengine failed')
             # sys.exit(1)
         else:
@@ -257,12 +272,15 @@ class CTaosInterface(object):
         '''Use result after calling self.query
         '''
         result = ctypes.c_void_p(CTaosInterface.libtaos.taos_use_result(connection))
-        fields = []
         pfields = CTaosInterface.fetchFields(result)
-        for i in range(CTaosInterface.fieldsCount(connection)):
-            fields.append({'name': pfields[i].name.decode('utf-8'),
-                           'bytes': pfields[i].bytes,
-                           'type': ord(pfields[i].type)})
+        fields = [
+            {
+                'name': pfields[i].name.decode('utf-8'),
+                'bytes': pfields[i].bytes,
+                'type': ord(pfields[i].type),
+            }
+            for i in range(CTaosInterface.fieldsCount(connection))
+        ]
 
         return result, fields
 
@@ -358,8 +376,8 @@ if __name__ == '__main__':
     cinter = CTaosInterface()
     conn = cinter.connect()
 
-    print('Query return value: {}'.format(cinter.query(conn, 'show databases')))
-    print('Affected rows: {}'.format(cinter.affectedRows(conn)))
+    print(f"Query return value: {cinter.query(conn, 'show databases')}")
+    print(f'Affected rows: {cinter.affectedRows(conn)}')
 
     result, des = CTaosInterface.useResult(conn)
 
